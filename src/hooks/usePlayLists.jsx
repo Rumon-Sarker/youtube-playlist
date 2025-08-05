@@ -7,50 +7,31 @@ const usePlaylists = () => {
     recentPlaylists: [],
     favorites: [],
   });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false)
 
   const getPlaylistById = async (playlistId, force = false) => {
     if (state.playlists[playlistId] && !force) {
       return;
     }
-    let result = await getPlayList(playlistId);
-    let cid, ct;
-    result = result.map((item) => {
-      const {
-        channelId,
-        title,
-        description,
-        thumbnails: { medium },
-        channelTitle,
-      } = item.snippet;
+    setLoading(true)
 
-      if (!cid) {
-        cid = channelId;
-      }
-      if (!ct) {
-        ct = channelTitle;
-      }
+    try {
 
-      return {
-        title,
-        description,
-        thumbnails: medium,
-
-        contentDetails: item.contentDetails,
-      };
-    });
-
-    setState((prev) => ({
-      ...prev,
-      playlists: {
-        ...prev.playlists,
-        [playlistId]: {
-          items: result,
-          playlistId: playlistId,
-          channelId: cid,
-          channelTitle: ct,
-        },
-      },
-    }));
+      const playlist = await getPlayList(playlistId)
+      setError("")
+      setState((prev) => ({
+        ...prev,
+        playlists: {
+          ...prev.playlists,
+          [playlistId]: playlist
+        }
+      }))
+    } catch (e) {
+      setError(e.response?.data?.error?.message || "Somethisng went wrong")
+    } finally {
+      setLoading(false)
+    }
   };
 
   const addToFavorites = (playlistId) => {
@@ -60,7 +41,7 @@ const usePlaylists = () => {
     }));
   };
 
-  const addToRecent = (prev) => {
+  const addToRecent = (playlistId) => {
     setState((prev) => ({
       ...prev,
       recentPlaylists: [...prev, playlistId],
@@ -68,7 +49,7 @@ const usePlaylists = () => {
   };
 
   const getPlayListsByIds = (ids = []) => {
-    return ids.map((id) => state.playlists[id]);
+    return ids?.map((id) => state?.playlists[id]);
   };
 
   return {
@@ -78,6 +59,8 @@ const usePlaylists = () => {
     getPlaylistById,
     addToRecent,
     addToFavorites,
+    error,
+    loading
   };
 };
 export default usePlaylists;
