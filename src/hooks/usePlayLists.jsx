@@ -1,36 +1,53 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import getPlayList from "../api";
+import storage from "../utils/Storage";
+
+const INIT_STATE = {
+  playlists: {},
+  recentPlaylists: [],
+  favorites: [],
+};
+
+const STORAGE_KEY = "youtube_playlist";
 
 const usePlaylists = () => {
-  const [state, setState] = useState({
-    playlists: {},
-    recentPlaylists: [],
-    favorites: [],
-  });
+  const [state, setState] = useState(INIT_STATE);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const state = storage.get(STORAGE_KEY);
+    if (state) {
+      setState({ ...state });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (state !== INIT_STATE) {
+      storage.save(STORAGE_KEY, state);
+    }
+  }, [state]);
 
   const getPlaylistById = async (playlistId, force = false) => {
     if (state.playlists[playlistId] && !force) {
       return;
     }
-    setLoading(true)
+    setLoading(true);
 
     try {
-
-      const playlist = await getPlayList(playlistId)
-      setError("")
+      const playlist = await getPlayList(playlistId);
+      setError("");
       setState((prev) => ({
         ...prev,
         playlists: {
           ...prev.playlists,
-          [playlistId]: playlist
-        }
-      }))
+          [playlistId]: playlist,
+        },
+      }));
     } catch (e) {
-      setError(e.response?.data?.error?.message || "Somethisng went wrong")
+      setError(e.response?.data?.error?.message || "Somethisng went wrong");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
 
@@ -60,7 +77,7 @@ const usePlaylists = () => {
     addToRecent,
     addToFavorites,
     error,
-    loading
+    loading,
   };
 };
 export default usePlaylists;
